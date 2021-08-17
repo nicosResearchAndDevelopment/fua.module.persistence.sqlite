@@ -4,7 +4,7 @@ const
     path                            = require('path'),
     SQLiteStore                     = require('../src/module.persistence.sqlite.js'),
     options                         = {
-        path: path.join(__dirname, 'test-data.db')
+        dbFile: path.join(__dirname, 'test-data.db')
     };
 
 describe('module.persistence.sqlite', function () {
