@@ -7,7 +7,21 @@ const
 
 class SQLiteStore extends DataStore {
 
-    // TODO implement interface
+    /**
+     * @type {SQLiteDatabase}
+     * @see https://github.com/JoshuaWise/better-sqlite3/blob/HEAD/docs/api.md#class-database
+     */
+    #db = null;
+
+    // TODO: constructor(options, factory): SQLiteStore
+    // TODO: size(): Promise<number>
+    // TODO: match(subject, predicate, object, graph): Promise<Dataset>
+    // TODO: add(quads): Promise<number>
+    // TODO: addStream(stream): Promise<number>
+    // TODO: delete(quads): Promise<number>
+    // TODO: deleteStream(stream): Promise<number>
+    // TODO: deleteMatches(subject, predicate, object, graph): Promise<number>
+    // TODO: has(quads): Promise<boolean>
 
 }
 
