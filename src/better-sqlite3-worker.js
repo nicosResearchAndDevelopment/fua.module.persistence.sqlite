@@ -1,178 +1,181 @@
 const
     worker_threads       = require('worker_threads'),
-    BetterSQLiteDatabase = require('better-sqlite3');
+    BetterSQLiteDatabase = require('better-sqlite3'),
+    util                 = require('@nrd/fua.core.util'),
+    assert               = new util.Assert('module.persistence.sqlite : better-sqlite3-worker');
 
 if (worker_threads.isMainThread) {
-    //region >> MAIN_THREAD
-
-    const
-        {Worker, MessageChannel} = worker_threads,
-        mainWorker               = new Worker(__filename);
-
-    class WorkerStatement {
-
-        #port = null;
-
-        constructor(port) {
-            this.#port = port;
-        }
-
-        #transfer(method, ...args) {
-            return new Promise((resolve, reject) => {
-                const channel = new MessageChannel();
-                channel.port1.once('message', ({error, result}) => {
-                    channel.port1.close();
-                    if (error) reject(error);
-                    else resolve(result);
-                });
-                this.#port.postMessage({
-                    port: channel.port2,
-                    method, args
-                }, [channel.port2]);
-            });
-        }
-
-        // TODO
-
-    } // WorkerStatement
-
-    class WorkerDatabase {
-
-        #port = null;
-
-        constructor(port) {
-            this.#port = port;
-        }
-
-        #transfer(method, ...args) {
-            return new Promise((resolve, reject) => {
-                const channel = new MessageChannel();
-                channel.port1.once('message', ({error, result}) => {
-                    channel.port1.close();
-                    if (error) reject(error);
-                    else resolve(result);
-                });
-                this.#port.postMessage({
-                    port: channel.port2,
-                    method, args
-                }, [channel.port2]);
-            });
-        }
-
-        async prepare(sqlQuery) {
-            const
-                channel     = new MessageChannel(),
-                stmtChannel = new MessageChannel();
-
-            await new Promise((resolve, reject) => {
-                channel.port1.once('message', ({error}) => {
-                    channel.port1.close();
-                    if (error) {
-                        stmtChannel.port1.close();
-                        reject(error);
-                    } else resolve();
-                });
-                this.#port.postMessage({
-                    port:   channel.port2,
-                    method: 'prepare',
-                    args:   [stmtChannel.port2, sqlQuery]
-                }, [channel.port2, stmtChannel.port2]);
-            });
-
-            return new WorkerStatement(stmtChannel.port1);
-        }
-
-        async exec(sqlQuery) {
-            await this.#transfer('exec', sqlQuery);
-            return this;
-        }
-
-        async close() {
-            await this.#transfer('close');
-            return this;
-        }
-
-    } // WorkerDatabase
-
-    module.exports = async function (filename, options) {
-        const mainChannel = new MessageChannel();
+    module.exports = async function (...args) {
+        const
+            worker  = new worker_threads.Worker(__filename),
+            channel = new worker_threads.MessageChannel();
 
         await new Promise((resolve, reject) => {
-            mainChannel.port1.once('message', ({error}) => {
+            channel.port1.once('message', ({error}) => {
                 if (error) {
-                    mainChannel.port1.close();
+                    channel.port1.close();
                     reject(error);
                 } else resolve();
             });
-            mainWorker.postMessage({
-                mainPort: mainChannel.port2,
-                filename, options
-            }, [mainChannel.port2]);
+            worker.postMessage({
+                port: channel.port2,
+                args
+            }, [channel.port2]);
         });
 
-        return new WorkerDatabase(mainChannel.port1);
-    } // module.exports
-
-    //endregion >> MAIN_THREAD
+        return new RemoteDatabase(channel.port1);
+    };
 } else {
-    //region >> WORKER_THREAD
+    worker_threads.parentPort.on('message', ({port, args}) => {
+        try {
+            const db = new BetterSQLiteDatabase(...args);
+            new WorkerDatabase(port, db);
+            port.postMessage(new WorkerReturnMessage(null));
+        } catch (err) {
+            port.postMessage(new WorkerReturnMessage(err));
+        }
+    });
+}
 
-    const
-        {parentPort} = worker_threads;
+class RemoteDatabase {
 
-    function ReturnMessage(error, result) {
-        if (!new.target) return new ReturnMessage(error, result);
+    #port = null;
+
+    async #transfer(method, ...args) {
+        const channel = new worker_threads.MessageChannel();
+        return await new Promise((resolve, reject) => {
+            channel.port1.once('message', ({error, result}) => {
+                channel.port1.close();
+                if (error) reject(error);
+                else resolve(result);
+            });
+            this.#port.postMessage({
+                port: channel.port2,
+                method, args
+            }, [channel.port2]);
+        });
+    } // RemoteDatabase##transfer
+
+    constructor(port) {
+        assert(port instanceof worker_threads.MessagePort,
+            'RemoteDatabase#constructor : expected port to be a MessagePort');
+        this.#port = port;
+    } // RemoteDatabase#constructor
+
+    async prepare(sqlQuery) {
+        const stmtPort = await this.#transfer('prepare', sqlQuery);
+        return new RemoteStatement(stmtPort);
+    } // RemoteDatabase#prepare
+
+    async exec(sqlQuery) {
+        await this.#transfer('exec', sqlQuery);
+    } // RemoteDatabase#exec
+
+} // RemoteDatabase
+
+class RemoteStatement {
+
+    #port = null;
+
+    async #transfer(method, ...args) {
+        const channel = new worker_threads.MessageChannel();
+        return await new Promise((resolve, reject) => {
+            channel.port1.once('message', ({error, result}) => {
+                channel.port1.close();
+                if (error) reject(error);
+                else resolve(result);
+            });
+            this.#port.postMessage({
+                port: channel.port2,
+                method, args
+            }, [channel.port2]);
+        });
+    } // RemoteStatement##transfer
+
+    constructor(port) {
+        assert(port instanceof worker_threads.MessagePort,
+            'RemoteStatement#constructor : expected port to be a MessagePort');
+        this.#port = port;
+    } // RemoteStatement#constructor
+
+    async run(...params) {
+        return await this.#transfer('run', ...params);
+    } // RemoteStatement#run
+
+} // RemoteStatement
+
+class WorkerReturnMessage {
+
+    constructor(error, result) {
         if (error) {
             this.error = JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)));
         } else {
             this.error  = null;
             this.result = result;
         }
-    } // ReturnMessage
+    } // WorkerReturnMessage#constructor
 
-    function constructionHandler(mainPort, filename, options) {
-        const
-            betterDB      = new BetterSQLiteDatabase(filename, options),
-            methodHandler = Object.create(null);
+} // WorkerReturnMessage
 
-        methodHandler['prepare'] = function (stmtPort, sqlQuery) {
-            const
-                statement   = betterDB.prepare(sqlQuery),
-                stmtHandler = Object.create(null);
-
-            // TODO
-        };
-
-        methodHandler['run'] = function (sqlQuery, ...parameter) {
-            return betterDB.prepare(sqlQuery).run(...parameter);
-        };
-
-        methodHandler['exec'] = function (sqlQuery) {
-            betterDB.exec(sqlQuery);
-        };
-
-        methodHandler['close'] = function () {
-            betterDB.close();
-        };
-
-        mainPort.on('message', ({port, method, args}) => {
-            try {
-                const res = methodHandler[method](...args);
-                port.postMessage(new ReturnMessage(null, res));
-            } catch (err) {
-                port.postMessage(new ReturnMessage(err));
-            }
-        });
-    } // constructionHandler
-
-    parentPort.on('message', ({mainPort, filename, options}) => {
-        try {
-            constructionHandler(mainPort, filename, options);
-            mainPort.postMessage(new ReturnMessage(null));
-        } catch (err) {
-            mainPort.postMessage(new ReturnMessage(err));
+function WorkerMessageHandler({port, method, args}) {
+    try {
+        const result = this[method](...args);
+        if (result instanceof worker_threads.MessagePort) {
+            port.postMessage(new WorkerReturnMessage(null, result), [result]);
+        } else {
+            port.postMessage(new WorkerReturnMessage(null, result));
         }
-    });
+    } catch (err) {
+        port.postMessage(new WorkerReturnMessage(err));
+    }
+} // WorkerMessageHandler
 
-    //endregion >> WORKER_THREAD
-}
+class WorkerDatabase {
+
+    #port = null;
+    #db   = null;
+
+    constructor(port, db) {
+        assert(port instanceof worker_threads.MessagePort,
+            'WorkerDatabase#constructor : expected port to be a MessagePort');
+        assert(db instanceof BetterSQLiteDatabase,
+            'WorkerDatabase#constructor : expected db to be a BetterSQLiteDatabase');
+        this.#port = port;
+        this.#db   = db;
+        this.#port.on('message', WorkerMessageHandler.bind(this));
+    } // WorkerDatabase#constructor
+
+    prepare(sqlQuery) {
+        const
+            stmt    = this.#db.prepare(sqlQuery),
+            channel = new worker_threads.MessageChannel();
+        new WorkerStatement(channel.port1, stmt);
+        return channel.port2;
+    } // WorkerDatabase#prepare
+
+    exec(...args) {
+        this.#db.exec(...args);
+    } // WorkerDatabase#exec
+
+} // WorkerDatabase
+
+class WorkerStatement {
+
+    #port = null;
+    #stmt = null;
+
+    constructor(port, stmt) {
+        assert(port instanceof worker_threads.MessagePort,
+            'WorkerStatement#constructor : expected port to be a MessagePort');
+        assert(util.isFunction(stmt.run),
+            'WorkerDatabase#constructor : expected stmt to be a BetterSQLiteStatement');
+        this.#port = port;
+        this.#stmt = stmt;
+        this.#port.on('message', WorkerMessageHandler.bind(this));
+    } // WorkerStatement#constructor
+
+    run(...params) {
+        return this.#stmt.run(...params);
+    } // WorkerStatement#run
+
+} // WorkerStatement

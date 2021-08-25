@@ -1,7 +1,7 @@
 CREATE TABLE term_table (
     termId INTEGER PRIMARY KEY AUTOINCREMENT,
     termType TEXT NOT NULL,
-    value TEXT NOT NULL,
+    value TEXT NOT NULL DEFAULT "",
     language TEXT NOT NULL DEFAULT "",
     datatype TEXT NOT NULL DEFAULT ""
 );
