@@ -1,9 +1,14 @@
 const
-    path              = require('path'),
-    fs                = require('fs'),
-    openDatabase      = require('../src/better-sqlite3-worker.js'),
-    setupTablesQuery  = fs.readFileSync(path.join(__dirname, '../src/queries/sqlite.setupTables.sql')).toString(),
-    setupIndicesQuery = fs.readFileSync(path.join(__dirname, '../src/queries/sqlite.setupIndices.sql')).toString();
+    path         = require('path'),
+    fs           = require('fs'),
+    openDatabase = require('../src/better-sqlite3-worker.js'),
+    loadQuery    = (filename) => fs.readFileSync(path.join(__dirname, '../src/queries', filename)).toString(),
+    sqlQueries   = Object.freeze({
+        setupTables:  loadQuery('sqlite.setupTables.sql'),
+        setupIndices: loadQuery('sqlite.setupIndices.sql'),
+        addTerm:      loadQuery('sqlite.addTerm.sql'),
+        addQuad:      loadQuery('sqlite.addQuad.sql')
+    });
 
 (async () => {
     try {
@@ -11,19 +16,23 @@ const
             path.join(__dirname, 'test-database.db'),
             {
                 readonly:      false,
-                fileMustExist: true
+                fileMustExist: false
             }
         );
 
-        await database.exec(setupTablesQuery);
-        await database.exec(setupIndicesQuery);
+        // await database.exec(sqlQueries.setupTables);
+        // await database.exec(sqlQueries.setupIndices);
 
-        const statement = await database.prepare(`
-            INSERT INTO term_table (termType) VALUES ('DefaultGraph')
-        `);
+        const addTermStmt = await database.prepare(sqlQueries.addTerm);
 
-        const result = await statement.run();
-        console.log(result);
+        console.log(await addTermStmt.run({termType: 'DefaultGraph', value: '', language: '', datatype: ''}));
+        console.log(await addTermStmt.run({termType: 'NamedNode', value: 'ex:hello', language: '', datatype: ''}));
+        console.log(await addTermStmt.run({
+            termType: 'Literal',
+            value:    'Hello World',
+            language: 'en',
+            datatype: 'rdf:langString'
+        }));
 
         debugger;
     } catch (err) {

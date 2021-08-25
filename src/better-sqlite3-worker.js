@@ -67,9 +67,46 @@ class RemoteDatabase {
         return new RemoteStatement(stmtPort);
     } // RemoteDatabase#prepare
 
+    async transaction(txFunction) {
+        util.assert(false, 'RemoteDatabase#transaction : not supported in async');
+    } // RemoteDatabase#transaction
+
+    async pragma(sqlPragma, queryOptions) {
+        return await this.#transfer('pragma', sqlPragma, queryOptions);
+    } // RemoteDatabase#pragma
+
+    async backup(destination, backupOptions) {
+        return await this.#transfer('backup', destination, backupOptions);
+    } // RemoteDatabase#backup
+
+    async serialize(serializeOptions) {
+        return await this.#transfer('serialize', serializeOptions);
+    } // RemoteDatabase#serialize
+
+    async function(fnName, fnOptions, customFn) {
+        util.assert(false, 'RemoteDatabase#function : not supported in async');
+    } // RemoteDatabase#function
+
+    async aggregate(fnName, fnOptions) {
+        util.assert(false, 'RemoteDatabase#aggregate : not supported in async');
+    } // RemoteDatabase#aggregate
+
+    async table(tableName, tableDef) {
+        util.assert(false, 'RemoteDatabase#table : not supported in async');
+    } // RemoteDatabase#table
+
+    async loadExtension(extPath, entryPoint) {
+        await this.#transfer('loadExtension', extPath, entryPoint);
+    } // RemoteDatabase#loadExtension
+
     async exec(sqlQuery) {
         await this.#transfer('exec', sqlQuery);
     } // RemoteDatabase#exec
+
+    async close() {
+        await this.#transfer('close');
+        this.#port.close();
+    } // RemoteDatabase#close
 
 } // RemoteDatabase
 
@@ -102,6 +139,38 @@ class RemoteStatement {
         return await this.#transfer('run', ...params);
     } // RemoteStatement#run
 
+    async get(...params) {
+        return await this.#transfer('get', ...params);
+    } // RemoteStatement#get
+
+    async all(...params) {
+        return await this.#transfer('all', ...params);
+    } // RemoteStatement#all
+
+    async iterate(...params) {
+        util.assert(false, 'RemoteStatement#iterate : not supported in async');
+    } // RemoteStatement#iterate
+
+    async pluck(toggleState) {
+        await this.#transfer('pluck', toggleState);
+    } // RemoteStatement#pluck
+
+    async expand(toggleState) {
+        await this.#transfer('expand', toggleState);
+    } // RemoteStatement#expand
+
+    async raw(toggleState) {
+        await this.#transfer('raw', toggleState);
+    } // RemoteStatement#raw
+
+    async columns() {
+        return await this.#transfer('columns');
+    } // RemoteStatement#columns
+
+    async bind(...params) {
+        await this.#transfer('bind', ...params);
+    } // RemoteStatement#bind
+
 } // RemoteStatement
 
 class WorkerReturnMessage {
@@ -117,9 +186,9 @@ class WorkerReturnMessage {
 
 } // WorkerReturnMessage
 
-function WorkerMessageHandler({port, method, args}) {
+async function WorkerMessageHandler({port, method, args}) {
     try {
-        const result = this[method](...args);
+        const result = await this[method](...args);
         if (result instanceof worker_threads.MessagePort) {
             port.postMessage(new WorkerReturnMessage(null, result), [result]);
         } else {
@@ -153,9 +222,45 @@ class WorkerDatabase {
         return channel.port2;
     } // WorkerDatabase#prepare
 
+    transaction(...args) {
+        util.assert(false, 'WorkerDatabase#transaction : not supported as worker');
+    } // WorkerDatabase#transaction
+
+    pragma(...args) {
+        this.#db.pragma(...args);
+    } // WorkerDatabase#pragma
+
+    backup(...args) {
+        this.#db.backup(...args);
+    } // WorkerDatabase#backup
+
+    serialize(...args) {
+        this.#db.serialize(...args);
+    } // WorkerDatabase#serialize
+
+    function(...args) {
+        util.assert(false, 'WorkerDatabase#function : not supported as worker');
+    } // WorkerDatabase#function
+
+    aggregate(...args) {
+        util.assert(false, 'WorkerDatabase#aggregate : not supported as worker');
+    } // WorkerDatabase#aggregate
+
+    table(...args) {
+        util.assert(false, 'WorkerDatabase#table : not supported as worker');
+    } // WorkerDatabase#table
+
+    loadExtension(...args) {
+        this.#db.loadExtension(...args);
+    } // WorkerDatabase#loadExtension
+
     exec(...args) {
         this.#db.exec(...args);
     } // WorkerDatabase#exec
+
+    close() {
+        this.#db.close();
+    } // WorkerDatabase#close
 
 } // WorkerDatabase
 
@@ -177,5 +282,37 @@ class WorkerStatement {
     run(...params) {
         return this.#stmt.run(...params);
     } // WorkerStatement#run
+
+    get(...params) {
+        return this.#stmt.get(...params);
+    } // WorkerStatement#get
+
+    all(...params) {
+        return this.#stmt.all(...params);
+    } // WorkerStatement#all
+
+    iterate(...params) {
+        util.assert(false, 'WorkerStatement#iterate : not supported as worker');
+    } // WorkerStatement#iterate
+
+    pluck(toggleState) {
+        this.#stmt.pluck(toggleState);
+    } // WorkerStatement#pluck
+
+    expand(toggleState) {
+        this.#stmt.expand(toggleState);
+    } // WorkerStatement#expand
+
+    raw(toggleState) {
+        this.#stmt.raw(toggleState);
+    } // WorkerStatement#raw
+
+    columns() {
+        return this.#stmt.columns();
+    } // WorkerStatement#columns
+
+    bind(...params) {
+        this.#stmt.bind(...params);
+    } // WorkerStatement#bind
 
 } // WorkerStatement
