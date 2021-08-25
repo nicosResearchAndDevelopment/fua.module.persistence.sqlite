@@ -4,10 +4,10 @@ const
     openDatabase = require('../src/better-sqlite3-worker.js'),
     loadQuery    = (filename) => fs.readFileSync(path.join(__dirname, '../src/queries', filename)).toString(),
     sqlQueries   = Object.freeze({
-        setupTables:  loadQuery('sqlite.setupTables.sql'),
-        setupIndices: loadQuery('sqlite.setupIndices.sql'),
-        addTerm:      loadQuery('sqlite.addTerm.sql'),
-        addQuad:      loadQuery('sqlite.addQuad.sql')
+        setupTables: loadQuery('sqlite.setupTables.sql'),
+        addTerm:     loadQuery('sqlite.addTerm.sql'),
+        getTerm:     loadQuery('sqlite.getTerm.sql'),
+        addQuad:     loadQuery('sqlite.addQuad.sql')
     });
 
 (async () => {
@@ -20,19 +20,21 @@ const
             }
         );
 
-        // await database.exec(sqlQueries.setupTables);
-        // await database.exec(sqlQueries.setupIndices);
+        await database.exec(sqlQueries.setupTables);
 
         const addTermStmt = await database.prepare(sqlQueries.addTerm);
+        const getTermStmt = await database.prepare(sqlQueries.getTerm);
 
-        console.log(await addTermStmt.run({termType: 'DefaultGraph', value: '', language: '', datatype: ''}));
-        console.log(await addTermStmt.run({termType: 'NamedNode', value: 'ex:hello', language: '', datatype: ''}));
-        console.log(await addTermStmt.run({
+        await addTermStmt.run({termType: 'DefaultGraph', value: '', language: '', datatype: ''});
+        await addTermStmt.run({termType: 'NamedNode', value: 'ex:hello', language: '', datatype: ''});
+        await addTermStmt.run({
             termType: 'Literal',
             value:    'Hello World',
             language: 'en',
             datatype: 'rdf:langString'
-        }));
+        });
+
+        console.log(await getTermStmt.get({termId: 3}));
 
         debugger;
     } catch (err) {

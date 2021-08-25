@@ -9,9 +9,10 @@ const
     {readFileSync}     = require('fs'),
     loadQuery          = (filename) => readFileSync(joinPath(__dirname, 'queries', filename)).toString(),
     sqlQueries         = Object.freeze({
-        setupTables:  loadQuery('sqlite.setupTables.sql'),
-        setupIndices: loadQuery('sqlite.setupIndices.sql'),
-        addTerm:      loadQuery('sqlite.addTerm.sql')
+        setupTables: loadQuery('sqlite.setupTables.sql'),
+        addTerm:     loadQuery('sqlite.addTerm.sql'),
+        addQuad:     loadQuery('sqlite.addQuad.sql'),
+        getTerm:     loadQuery('sqlite.getTerm.sql')
     });
 
 class SQLiteStore extends DataStore {
