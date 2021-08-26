@@ -25,7 +25,9 @@ if (worker_threads.isMainThread) {
 
         return new RemoteDatabase(channel.port1);
     };
-} else {
+}
+// if (!worker_threads.isMainThread) {
+else {
     worker_threads.parentPort.on('message', ({port, args}) => {
         try {
             const db = new BetterSQLiteDatabase(...args);

@@ -23,18 +23,35 @@ const
         await database.exec(sqlQueries.setupTables);
 
         const addTermStmt = await database.prepare(sqlQueries.addTerm);
-        const getTermStmt = await database.prepare(sqlQueries.getTerm);
+        // const getTermStmt = await database.prepare(sqlQueries.getTerm);
 
-        await addTermStmt.run({termType: 'DefaultGraph', value: '', language: '', datatype: ''});
-        await addTermStmt.run({termType: 'NamedNode', value: 'ex:hello', language: '', datatype: ''});
-        await addTermStmt.run({
+        // console.log(await addTermStmt.get({
+        //     termType: 'DefaultGraph',
+        //     value:    '',
+        //     language: '',
+        //     datatype: ''
+        // }));
+        // console.log(await addTermStmt.get({
+        //     termType: 'NamedNode',
+        //     value:    'ex:hello',
+        //     language: '',
+        //     datatype: ''
+        // }));
+        console.log(await addTermStmt.run({
             termType: 'Literal',
             value:    'Hello World',
             language: 'en',
             datatype: 'rdf:langString'
-        });
+        }));
+        // console.log(await addTermStmt.get('Literal', 'Hello World', 'en', 'rdf:langString'));
 
-        console.log(await getTermStmt.get({termId: 3}));
+        console.log(await getTermStmt.get(1));
+
+        // const
+        //     {termId, created} = await addTermStmt.get('NamedNode', 'ex:hello', '', ''),
+        //     data              = await getTermStmt.get(termId);
+
+        // console.log({termId, created, data});
 
         debugger;
     } catch (err) {

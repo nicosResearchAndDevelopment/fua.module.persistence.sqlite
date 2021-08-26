@@ -1,53 +1,73 @@
-CREATE TABLE IF NOT EXISTS term_table (
-    termId INTEGER PRIMARY KEY AUTOINCREMENT,
-    termType TEXT NOT NULL,
-    value TEXT NOT NULL DEFAULT "",
-    language TEXT NOT NULL DEFAULT "",
-    datatype TEXT NOT NULL DEFAULT ""
+CREATE TABLE
+IF NOT EXISTS
+term_table (
+    termId INTEGER
+        PRIMARY KEY AUTOINCREMENT,
+
+    termType TEXT
+        NOT NULL,
+
+    value TEXT
+        NOT NULL
+        DEFAULT '',
+
+    language TEXT
+        NOT NULL
+        DEFAULT '',
+
+    datatype TEXT
+        NOT NULL
+        DEFAULT '',
+
+    UNIQUE (
+        termType,
+        value,
+        language,
+        datatype
+    )
 );
 
---CREATE TABLE IF NOT EXISTS quad_table (
---    quadId INTEGER PRIMARY KEY AUTOINCREMENT,
---    subjectId INTEGER NOT NULL,
---    predicateId INTEGER NOT NULL,
---    objectId INTEGER NOT NULL,
---    graphId INTEGER NOT NULL
---);
+CREATE TABLE
+IF NOT EXISTS
+quad_table (
+--    quadId INTEGER
+--        PRIMARY KEY AUTOINCREMENT,
 
-CREATE TABLE IF NOT EXISTS quad_table (
-    subjectId INTEGER NOT NULL,
-    predicateId INTEGER NOT NULL,
-    objectId INTEGER NOT NULL,
-    graphId INTEGER NOT NULL,
-    PRIMARY KEY (subjectId, predicateId, objectId, graphId),
-    FOREIGN KEY (subjectId)
-          REFERENCES term_table (termId)
+    subjectId INTEGER
+        NOT NULL
+        REFERENCES term_table (termId)
              ON DELETE RESTRICT
              ON UPDATE RESTRICT,
-    FOREIGN KEY (predicateId)
-          REFERENCES term_table (termId)
+
+    predicateId INTEGER
+        NOT NULL
+        REFERENCES term_table (termId)
              ON DELETE RESTRICT
              ON UPDATE RESTRICT,
-    FOREIGN KEY (objectId)
-          REFERENCES term_table (termId)
+
+    objectId INTEGER
+        NOT NULL
+        REFERENCES term_table (termId)
              ON DELETE RESTRICT
              ON UPDATE RESTRICT,
-    FOREIGN KEY (graphId)
-          REFERENCES term_table (termId)
+
+    graphId INTEGER
+        NOT NULL
+        REFERENCES term_table (termId)
              ON DELETE RESTRICT
-             ON UPDATE RESTRICT
-);
+             ON UPDATE RESTRICT,
 
-CREATE UNIQUE INDEX IF NOT EXISTS term_index ON term_table (
-    termType,
-    value,
-    language,
-    datatype
-);
+    PRIMARY KEY (
+        subjectId,
+        predicateId,
+        objectId,
+        graphId
+    )
 
-CREATE UNIQUE INDEX IF NOT EXISTS quad_index ON quad_table (
-    subjectId,
-    predicateId,
-    objectId,
-    graphId
+--    UNIQUE (
+--        subjectId,
+--        predicateId,
+--        objectId,
+--        graphId
+--    )
 );

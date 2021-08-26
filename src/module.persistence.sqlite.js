@@ -25,11 +25,17 @@ class SQLiteStore extends DataStore {
         const {dbFile} = options;
         assert(util.isString(dbFile), 'SQLiteStore#constructor : invalid dbFile');
         this.#db = (async () => {
-            this.#db    = await openWorkerDatabase(dbFile);
-            this.#stmts = Object.freeze({
-                addTerm: await this.#db.prepare(sqlQueries.addTerm)
+            const db = await openWorkerDatabase(dbFile, {
+                readonly:      false,
+                fileMustExist: false
             });
-            return this.#db;
+            await db.exec(sqlQueries.setupTables);
+            this.#stmts = Object.freeze({
+                addTerm: await db.prepare(sqlQueries.addTerm),
+                addQuad: await db.prepare(sqlQueries.addQuad)
+            });
+            this.#db    = db;
+            return db;
         })();
     } // SQLiteStore#constructor
 
@@ -43,9 +49,35 @@ class SQLiteStore extends DataStore {
 
         try {
             let quadsAdded = 0;
+            await this.#db;
 
-            const
-                db = await this.#db;
+            const termArr = [], quadMatrix = [];
+            for (let {subject, predicate, object, graph} of quadArr) {
+                const quadEntry = [];
+                for (let term of [subject, predicate, object, graph]) {
+                    let termIndex = termArr.findIndex(compare => compare.equals(term));
+                    if (termIndex < 0) {
+                        termIndex = termArr.length;
+                        termArr.push(term);
+                    }
+                    quadEntry.push(termIndex);
+                }
+                quadMatrix.push(quadEntry);
+            }
+
+            const termMap = new Map(await Promise.all(termArr.map(async (term, termIndex) => {
+                const {termId} = await this.#stmts.addTerm.get(
+                    term.termType, term.value ?? '', term.language ?? '', term.datatype?.value ?? ''
+                );
+                return [termIndex, termId];
+            })));
+
+            await Promise.all(quadMatrix.map(async (quadEntry) => {
+                const {changes} = await this.#stmts.addQuad.run(
+                    ...quadEntry.map(termIndex => termMap.get(termIndex))
+                );
+                if (changes) quadsAdded++;
+            }));
 
             // TODO: add(quads): Promise<number>
 
@@ -66,6 +98,11 @@ class SQLiteStore extends DataStore {
 
     // TODO: has(quads): Promise<boolean>
 
-}
+    async close() {
+        const db = await this.#db;
+        await db.close();
+    } // SQLiteStore#close
+
+} // SQLiteStore
 
 module.exports = SQLiteStore;

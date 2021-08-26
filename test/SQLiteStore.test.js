@@ -4,10 +4,13 @@ const
     path                            = require('path'),
     SQLiteStore                     = require('../src/module.persistence.sqlite.js'),
     options                         = {
-        dbFile: path.join(__dirname, 'test-data.db')
+        // dbFile: path.join(__dirname, 'test-data.db')
+        dbFile: path.join(__dirname, 'test-database.db')
     };
 
 describe('module.persistence.sqlite', function () {
+
+    this.timeout(0);
 
     let store, quad_1, quad_2;
     before('construct a SQLiteStore and two quads', async function () {
@@ -62,6 +65,10 @@ describe('module.persistence.sqlite', function () {
     test('should have a size of 0, after it deleted the second quad', async function () {
         await store.delete(quad_2);
         expect(await store.size()).toBe(0);
+    });
+
+    after('exit the application', async function () {
+        await store.close();
     });
 
 }); // describe
