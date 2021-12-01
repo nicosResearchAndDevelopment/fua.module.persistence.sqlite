@@ -78,7 +78,7 @@ describe('module.persistence.sqlite', function () {
     });
 
     after('clear the database', async function () {
-        // await store.close();
+        await store.clearLooseNodes();
         await fs.writeFile(options.dbFile, '');
     });
 

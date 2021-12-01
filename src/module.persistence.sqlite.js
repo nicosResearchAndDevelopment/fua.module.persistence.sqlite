@@ -44,31 +44,31 @@ class SQLiteStore extends DataStore {
 
     async match(subject, predicate, object, graph) {
         const
-            dataset   = await super.match(subject, predicate, object, graph),
-            getTerm   = this.#statements.getTerm
+            dataset    = await super.match(subject, predicate, object, graph),
+            getTerm    = this.#statements.getTerm
                 || (this.#statements.getTerm = this.#db.prepare(queries.getTerm)),
-            getTermId = this.#statements.getTermId
-                || (this.#statements.getTermId = this.#db.prepare(queries.getTermId)),
-            getQuads  = this.#statements.getQuads
+            getTermIds = this.#statements.getTermIds
+                || (this.#statements.getTermIds = this.#db.prepare(queries.getTermIds)),
+            getQuads   = this.#statements.getQuads
                 || (this.#statements.getQuads = this.#db.prepare(queries.getQuads)),
-            quadParam = {subjectId: null, predicateId: null, objectId: null, graphId: null};
+            quadParam  = {subjectId: null, predicateId: null, objectId: null, graphId: null};
         if (subject) {
-            const subjResult = getTermId.get(_termToRow(subject));
+            const subjResult = getTermIds.get(_termToRow(subject));
             if (!subjResult) return dataset;
             quadParam.subjectId = subjResult.termId;
         }
         if (predicate) {
-            const predResult = getTermId.get(_termToRow(predicate));
+            const predResult = getTermIds.get(_termToRow(predicate));
             if (!predResult) return dataset;
             quadParam.predicateId = predResult.termId;
         }
         if (object) {
-            const objResult = getTermId.get(_termToRow(object));
+            const objResult = getTermIds.get(_termToRow(object));
             if (!objResult) return dataset;
             quadParam.objectId = objResult.termId;
         }
         if (graph) {
-            const graphResult = getTermId.get(_termToRow(graph));
+            const graphResult = getTermIds.get(_termToRow(graph));
             if (!graphResult) return dataset;
             quadParam.graphId = graphResult.termId;
         }
@@ -138,24 +138,24 @@ class SQLiteStore extends DataStore {
     async delete(quads) {
         const
             quadArr     = await super.delete(quads),
-            getTermId   = this.#statements.getTermId
-                || (this.#statements.getTermId = this.#db.prepare(queries.getTermId)),
+            getTermIds  = this.#statements.getTermIds
+                || (this.#statements.getTermIds = this.#db.prepare(queries.getTermIds)),
             deleteQuads = this.#statements.deleteQuads
                 || (this.#statements.deleteQuads = this.#db.prepare(queries.deleteQuads));
 
         let deleted = 0;
         for (let quad of quadArr) {
             const quadParam  = {};
-            const subjResult = getTermId.get(_termToRow(quad.subject));
+            const subjResult = getTermIds.get(_termToRow(quad.subject));
             if (!subjResult) continue;
             quadParam.subjectId = subjResult.termId;
-            const predResult    = getTermId.get(_termToRow(quad.predicate));
+            const predResult    = getTermIds.get(_termToRow(quad.predicate));
             if (!predResult) continue;
             quadParam.predicateId = predResult.termId;
-            const objResult       = getTermId.get(_termToRow(quad.object));
+            const objResult       = getTermIds.get(_termToRow(quad.object));
             if (!objResult) continue;
             quadParam.objectId = objResult.termId;
-            const graphResult  = getTermId.get(_termToRow(quad.graph));
+            const graphResult  = getTermIds.get(_termToRow(quad.graph));
             if (!graphResult) continue;
             quadParam.graphId = graphResult.termId;
             const quadResult  = deleteQuads.run(quadParam);
@@ -170,24 +170,24 @@ class SQLiteStore extends DataStore {
     async deleteStream(stream) {
         const
             quadStream  = await super.deleteStream(stream),
-            getTermId   = this.#statements.getTermId
-                || (this.#statements.getTermId = this.#db.prepare(queries.getTermId)),
+            getTermIds  = this.#statements.getTermIds
+                || (this.#statements.getTermIds = this.#db.prepare(queries.getTermIds)),
             deleteQuads = this.#statements.deleteQuads
                 || (this.#statements.deleteQuads = this.#db.prepare(queries.deleteQuads));
 
         let deleted = 0;
         quadStream.on('data', (quad) => {
             const quadParam  = {};
-            const subjResult = getTermId.get(_termToRow(quad.subject));
+            const subjResult = getTermIds.get(_termToRow(quad.subject));
             if (!subjResult) return;
             quadParam.subjectId = subjResult.termId;
-            const predResult    = getTermId.get(_termToRow(quad.predicate));
+            const predResult    = getTermIds.get(_termToRow(quad.predicate));
             if (!predResult) return;
             quadParam.predicateId = predResult.termId;
-            const objResult       = getTermId.get(_termToRow(quad.object));
+            const objResult       = getTermIds.get(_termToRow(quad.object));
             if (!objResult) return;
             quadParam.objectId = objResult.termId;
-            const graphResult  = getTermId.get(_termToRow(quad.graph));
+            const graphResult  = getTermIds.get(_termToRow(quad.graph));
             if (!graphResult) return;
             quadParam.graphId = graphResult.termId;
             const quadResult  = deleteQuads.run(quadParam);
@@ -204,30 +204,30 @@ class SQLiteStore extends DataStore {
     async deleteMatches(subject, predicate, object, graph) {
         await super.deleteMatches(subject, predicate, object, graph);
         const
-            getTerm   = this.#statements.getTerm
+            getTerm    = this.#statements.getTerm
                 || (this.#statements.getTerm = this.#db.prepare(queries.getTerm)),
-            getTermId = this.#statements.getTermId
-                || (this.#statements.getTermId = this.#db.prepare(queries.getTermId)),
-            getQuads  = this.#statements.getQuads
+            getTermIds = this.#statements.getTermIds
+                || (this.#statements.getTermIds = this.#db.prepare(queries.getTermIds)),
+            getQuads   = this.#statements.getQuads
                 || (this.#statements.getQuads = this.#db.prepare(queries.getQuads)),
-            quadParam = {subjectId: null, predicateId: null, objectId: null, graphId: null};
+            quadParam  = {subjectId: null, predicateId: null, objectId: null, graphId: null};
         if (subject) {
-            const subjResult = getTermId.get(_termToRow(subject));
+            const subjResult = getTermIds.get(_termToRow(subject));
             if (!subjResult) return 0;
             quadParam.subjectId = subjResult.termId;
         }
         if (predicate) {
-            const predResult = getTermId.get(_termToRow(predicate));
+            const predResult = getTermIds.get(_termToRow(predicate));
             if (!predResult) return 0;
             quadParam.predicateId = predResult.termId;
         }
         if (object) {
-            const objResult = getTermId.get(_termToRow(object));
+            const objResult = getTermIds.get(_termToRow(object));
             if (!objResult) return 0;
             quadParam.objectId = objResult.termId;
         }
         if (graph) {
-            const graphResult = getTermId.get(_termToRow(graph));
+            const graphResult = getTermIds.get(_termToRow(graph));
             if (!graphResult) return 0;
             quadParam.graphId = graphResult.termId;
         }
@@ -242,24 +242,24 @@ class SQLiteStore extends DataStore {
 
     async has(quads) {
         const
-            quadArr   = await super.has(quads),
-            getTermId = this.#statements.getTermId
-                || (this.#statements.getTermId = this.#db.prepare(queries.getTermId)),
-            getQuads  = this.#statements.getQuads
+            quadArr    = await super.has(quads),
+            getTermIds = this.#statements.getTermIds
+                || (this.#statements.getTermIds = this.#db.prepare(queries.getTermIds)),
+            getQuads   = this.#statements.getQuads
                 || (this.#statements.getQuads = this.#db.prepare(queries.getQuads));
 
         for (let quad of quadArr) {
             const quadParam  = {};
-            const subjResult = getTermId.get(_termToRow(quad.subject));
+            const subjResult = getTermIds.get(_termToRow(quad.subject));
             if (!subjResult) return false;
             quadParam.subjectId = subjResult.termId;
-            const predResult    = getTermId.get(_termToRow(quad.predicate));
+            const predResult    = getTermIds.get(_termToRow(quad.predicate));
             if (!predResult) return false;
             quadParam.predicateId = predResult.termId;
-            const objResult       = getTermId.get(_termToRow(quad.object));
+            const objResult       = getTermIds.get(_termToRow(quad.object));
             if (!objResult) return false;
             quadParam.objectId = objResult.termId;
-            const graphResult  = getTermId.get(_termToRow(quad.graph));
+            const graphResult  = getTermIds.get(_termToRow(quad.graph));
             if (!graphResult) return false;
             quadParam.graphId = graphResult.termId;
             const quadResult  = getQuads.get(quadParam);
@@ -273,8 +273,11 @@ class SQLiteStore extends DataStore {
     } // SQLiteStore#setupTables
 
     async clearLooseNodes() {
-        assert(false, 'not implemented');
-        // TODO
+        const
+            deleteLooseTerms = this.#statements.deleteLooseTerms
+                || (this.#statements.deleteLooseTerms = this.#db.prepare(queries.deleteLooseTerms)),
+            result           = deleteLooseTerms.run();
+        return result.changes;
     } // SQLiteStore#clearLooseNodes
 
 } // SQLiteStore
