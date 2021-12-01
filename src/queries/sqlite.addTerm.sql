@@ -1,8 +1,8 @@
 INSERT
 --INSERT OR IGNORE
 INTO term_table ( termType, value, language, datatype )
---VALUES ( $termType, $value, $language, $datatype )
-VALUES ( ?, ?, ?, ? )
+VALUES ( $termType, $value, $language, $datatype )
+--VALUES ( ?, ?, ?, ? )
 ON CONFLICT DO
     UPDATE SET termType = excluded.termType -- TODO: this might be a problem with foreign-key-constraint in quad_table (maybe not)
 

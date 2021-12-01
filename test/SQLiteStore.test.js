@@ -2,6 +2,7 @@ const
     {describe, test, before, after} = require('mocha'),
     expect                          = require('expect'),
     path                            = require('path'),
+    fs                              = require('fs/promises'),
     SQLiteStore                     = require('../src/module.persistence.sqlite.js'),
     options                         = {
         dbFile: path.join(__dirname, 'data/test-database.db')
@@ -24,6 +25,16 @@ describe('module.persistence.sqlite', function () {
             quad_1.predicate,
             store.factory.literal('Hello World', 'en')
         );
+    });
+
+    test('should setup sql tables', async function () {
+        await store.setupTables();
+    });
+
+    test('should have an initial size of 0', async function () {
+        const size = await store.size();
+        expect(typeof size).toBe('number');
+        expect(size).toBe(0);
     });
 
     test('should add the two quads to the store once', async function () {
@@ -66,8 +77,9 @@ describe('module.persistence.sqlite', function () {
         expect(await store.size()).toBe(0);
     });
 
-    // after('exit the application', async function () {
-    //     await store.close();
-    // });
+    after('clear the database', async function () {
+        // await store.close();
+        await fs.writeFile(options.dbFile, '');
+    });
 
 }); // describe
