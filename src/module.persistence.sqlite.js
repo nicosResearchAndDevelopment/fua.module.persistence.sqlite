@@ -1,8 +1,8 @@
 const
-    util                 = require('@nrd/fua.core.util'),
+    util                 = require('@fua/core.util'),
     assert               = new util.Assert('module.persistence.sqlite'),
     BetterSQLiteDatabase = require('better-sqlite3'),
-    {DataStore}          = require('@nrd/fua.module.persistence'),
+    {DataStore}          = require('@fua/module.persistence'),
     queries              = require('./queries/index.js'),
     _termToRow           = (term) => ({
         termType: term.termType,

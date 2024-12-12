@@ -1,8 +1,8 @@
 const
     SQLiteStore            = require('../src/module.persistence.sqlite.js'),
     {join: joinPath}       = require('path'),
-    {loadDataFiles}        = require('@nrd/fua.module.rdf'),
-    {DataFactory, Dataset} = require('@nrd/fua.module.persistence'),
+    {loadDataFiles}        = require('@fua/module.rdf'),
+    {DataFactory, Dataset} = require('@fua/module.persistence'),
     context                = require('./data/context.json');
 
 (async function Main() {

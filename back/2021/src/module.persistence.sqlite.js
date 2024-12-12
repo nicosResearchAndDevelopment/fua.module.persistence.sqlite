@@ -1,10 +1,10 @@
 const
-    util               = require('@nrd/fua.core.util'),
+    util               = require('@fua/core.util'),
     assert             = new util.Assert('module.persistence.sqlite'),
     // SEE https://github.com/JoshuaWise/better-sqlite3/blob/HEAD/docs/api.md
     // SQLiteDatabase = require('better-sqlite3'),
     openWorkerDatabase = require('./better-sqlite3-worker.js'),
-    {DataStore}        = require('@nrd/fua.module.persistence'),
+    {DataStore}        = require('@fua/module.persistence'),
     {join: joinPath}   = require('path'),
     {readFileSync}     = require('fs'),
     loadQuery          = (filename) => readFileSync(joinPath(__dirname, 'queries', filename)).toString(),

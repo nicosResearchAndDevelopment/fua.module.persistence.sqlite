@@ -1,7 +1,7 @@
 const
     worker_threads       = require('worker_threads'),
     BetterSQLiteDatabase = require('better-sqlite3'),
-    util                 = require('@nrd/fua.core.util'),
+    util                 = require('@fua/core.util'),
     assert               = new util.Assert('module.persistence.sqlite : better-sqlite3-worker');
 
 if (worker_threads.isMainThread) {
